@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -285,7 +286,7 @@ fun MySootheApp(windowSize: WindowSizeClass) {
         }
 
         WindowWidthSizeClass.Expanded -> {
-            MySootheAppLandscape()
+            MySootheAppLandscape2()
         }
     }
 }
@@ -299,15 +300,27 @@ private fun MySootheAppPortrait() {
     }
 }
 
+
 @Composable
 fun MySootheAppLandscape() {
     MySootheTheme {
-        Scaffold { padding ->
-            Row() {
+        Surface(color = MaterialTheme.colorScheme.background) {
+            Row(modifier = Modifier.fillMaxSize()) {
                 SootheNavigationRail()
-                HomeScreen(Modifier.padding(padding))
+                HomeScreen()
             }
         }
+    }
+}
+
+@Composable
+fun MySootheAppLandscape2() {
+    MySootheTheme {
+        Row(modifier = Modifier.fillMaxSize()) {
+            SootheNavigationRail()
+            HomeScreen()
+        }
+
     }
 }
 
@@ -441,6 +454,12 @@ fun ScreenContentPreview() {
 @Composable
 fun BottomNavigationPreview() {
     MySootheTheme { SootheBottomNavigation(Modifier.padding(top = 24.dp)) }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFFF0EAE2)
+@Composable
+fun LandscapeApp() {
+    MySootheTheme { MySootheAppLandscape() }
 }
 //
 //@OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
