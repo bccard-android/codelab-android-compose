@@ -19,16 +19,26 @@ package com.example.compose.rally
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavController
+import androidx.navigation.NavDestination
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navDeepLink
+import com.example.compose.rally.ui.accounts.AccountsScreen
+import com.example.compose.rally.ui.accounts.SingleAccountScreen
+import com.example.compose.rally.ui.bills.BillsScreen
 import com.example.compose.rally.ui.components.RallyTabRow
+import com.example.compose.rally.ui.overview.OverviewScreen
 import com.example.compose.rally.ui.theme.RallyTheme
 
 /**
@@ -44,22 +54,88 @@ class RallyActivity : ComponentActivity() {
     }
 }
 
+infix fun NavController.toSingleNavigate(route : String) {
+    navigate(route){
+        launchSingleTop = true
+        popUpTo(graph.findStartDestination().id) { saveState = true }
+        restoreState = true
+    }
+}
+
 @Composable
 fun RallyApp() {
     RallyTheme {
-        var currentScreen: RallyDestination by remember { mutableStateOf(Overview) }
+        val navController = rememberNavController()
+        val currentBackStack by navController.currentBackStackEntryAsState()
+        val currentDestination: NavDestination? = currentBackStack?.destination
+        val currentScreen =
+            rallyTabRowScreens.find { it.route == currentDestination?.route } ?: Accounts
+
         Scaffold(
             topBar = {
                 RallyTabRow(
                     allScreens = rallyTabRowScreens,
-                    onTabSelected = { screen -> currentScreen = screen },
+                    onTabSelected = { screen: RallyDestination ->
+                        navController.toSingleNavigate(screen.route)
+                    },
                     currentScreen = currentScreen
                 )
             }
         ) { innerPadding ->
-            Box(Modifier.padding(innerPadding)) {
-                currentScreen.screen()
-            }
+
+            RallyNavHost(navController, innerPadding)
         }
     }
+}
+
+@Composable
+fun RallyNavHost(
+    navController: NavHostController,
+    innerPadding: PaddingValues
+) {
+    NavHost(
+        navController = navController,
+        startDestination = Overview.route,
+        modifier = Modifier.padding(innerPadding)
+    ) {
+        composable(route = Overview.route) {
+            OverviewScreen(
+                onClickSeeAllAccounts = {
+                    navController.toSingleNavigate(Accounts.route)
+                },
+                onClickSeeAllBills = {
+                    navController.toSingleNavigate(Bills.route)
+                },
+                onAccountClick = { accountType ->
+                    navController.toSingleNavigate("${SingleAccount.route}/$accountType")
+                    NavigateToSingleAccount(navController, accountType)
+                }
+            )
+        }
+        composable(route = Accounts.route) {
+            AccountsScreen(
+                onAccountClick = { accountType ->
+                    NavigateToSingleAccount(navController, accountType)
+                }
+            )
+        }
+        composable(route = Bills.route) {
+            BillsScreen()
+        }
+
+        composable(
+            route = SingleAccount.routeWithArgs,
+            arguments = SingleAccount.arguments,
+            deepLinks = SingleAccount.deepLinks
+        ) { navBackStackEntry ->
+            val accountType =
+                navBackStackEntry.arguments?.getString(SingleAccount.accountTypeArg)
+            SingleAccountScreen(accountType)
+        }
+
+    }
+}
+
+private fun NavigateToSingleAccount(navController: NavHostController, accountType: String) {
+    navController.toSingleNavigate("${SingleAccount.route}/$accountType")
 }
